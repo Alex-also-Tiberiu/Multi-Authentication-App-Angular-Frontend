@@ -1,0 +1,129 @@
+.success-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem;
+}
+
+.success-card {
+  background: white;
+  padding: 3rem 2rem;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 2rem;
+  background: #28a745;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: scaleIn 0.5s ease-out;
+
+  svg {
+    width: 50px;
+    height: 50px;
+    color: white;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+h1 {
+  margin: 0 0 1rem;
+  color: #333;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.success-message {
+  color: #666;
+  font-size: 1.1rem;
+  margin: 1rem 0;
+  line-height: 1.6;
+}
+
+.redirect-message {
+  color: #999;
+  font-size: 0.95rem;
+  margin: 1.5rem 0 1rem;
+}
+
+.countdown {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #f0f4ff;
+  border-left: 4px solid #667eea;
+  border-radius: 4px;
+
+  span {
+    color: #334;
+    font-size: 0.95rem;
+    font-weight: 500;
+
+    strong {
+      color: #667eea;
+      font-size: 1.1rem;
+    }
+  }
+}
+
+.btn {
+  margin-top: 2rem;
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+
+  &.btn-primary {
+    background: #667eea;
+    color: white;
+
+    &:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .success-card {
+    padding: 2rem 1.5rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .success-message {
+    font-size: 1rem;
+  }
+}
