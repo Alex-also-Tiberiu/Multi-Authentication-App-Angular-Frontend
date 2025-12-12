@@ -2,6 +2,7 @@
 
 ## 1. First request: LOGIN
 
+```
 Frontend (Browser)
     ↓
     | POST /api/v1/auth/authenticate
@@ -21,9 +22,11 @@ Frontend (Browser)
     | The browser receives the Set-Cookie headers
     | Automatically saves the cookies in the browser's "cookie jar"
     | (Not JavaScript, the browser manages them!)
+```
 
 ## 2. Subsequent requests: API calls
 
+```
 Frontend (Browser)
     ↓
     | GET /api/v1/my-data
@@ -45,9 +48,11 @@ Backend
 Frontend (Browser)
     ↓
     | Receives the response
+```
 
 ## 3. Case: Access token expires (401)
 
+```
 Frontend (Browser)
     ↓
     | GET /api/v1/my-data (with the old access_token in the cookie)
@@ -85,9 +90,11 @@ Backend
     | Receives the request with the new access_token
     | Token is valid ✓
     | Returns the data
+```
 
 ## 4. Case: Refresh token expires (409)
 
+```
 Frontend (Browser)
     ↓
     | The interceptor catches the 401
@@ -113,6 +120,7 @@ Frontend (Browser)
 Frontend (Browser)
     ↓
     | The user must log in again
+```
 
 ## 🔑 KEY Differences between localStorage and HttpOnly Cookie
 
