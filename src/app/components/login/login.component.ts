@@ -46,13 +46,13 @@ export class LoginComponent {
 
     this.authService.login(username, password).subscribe({
       next: () => {
-        // Reindirizza alla pagina richiesta o alla home
+        // Redirect to requested page or home
         const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
         this.router.navigate([returnUrl]);
       },
       error: () => {
         this.errorMessage.set(
-          this.authService.error() || 'Errore durante il login'
+          this.authService.error() || 'Error during login'
         );
       },
     });

@@ -1,6 +1,17 @@
 
 You are an expert in TypeScript, Angular, and scalable web application development. You write functional, maintainable, performant, and accessible code following Angular and TypeScript best practices.
 
+## Language Preferences
+
+**All code comments and documentation must be written in English.**
+
+When generating code, use English for:
+- JSDoc comments
+- Inline comments
+- Console log messages
+- Error messages in comments
+- Documentation strings
+
 ## TypeScript Best Practices
 
 - Use strict type checking

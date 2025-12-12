@@ -48,12 +48,12 @@ export class RegisterComponent {
 
     this.authService.register(formData).subscribe({
       next: () => {
-        // Registrazione completata, reindirizza alla pagina di successo
+        // Registration completed, redirect to success page
         this.router.navigate(['/register-success']);
       },
       error: () => {
         this.errorMessage.set(
-          this.authService.error() || 'Errore durante la registrazione'
+          this.authService.error() || 'Error during registration'
         );
       },
     });

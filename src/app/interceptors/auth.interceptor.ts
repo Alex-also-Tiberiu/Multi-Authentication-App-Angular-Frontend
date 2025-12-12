@@ -18,45 +18,27 @@ export class AuthInterceptor implements HttpInterceptor {
     request: HttpRequest<unknown>,
     next: HttpHandler
   ): Observable<HttpEvent<unknown>> {
-    // Non modificare le richieste che già hanno un header Authorization (come il login con Basic Auth)
-    if (request.headers.has('Authorization')) {
-      return next.handle(request);
-    }
-
-    const token = this.authService.getToken();
-
-    // Se il token esiste, aggiungi l'header Authorization Bearer
-    if (token) {
-      request = request.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    }
+    // Add withCredentials to all requests to send HttpOnly cookies
+    request = request.clone({
+      withCredentials: true,
+    });
 
     return next.handle(request).pipe(
       catchError((error) => {
-        // Se riceviamo un 401 (Unauthorized), prova a rinnovare il token
+        // If we receive a 401 (Unauthorized), try to refresh the token
         if (error.status === 401 && !this.isRefreshing) {
           this.isRefreshing = true;
 
           return this.authService.refreshAccessToken().pipe(
-            switchMap((response) => {
+            switchMap(() => {
               this.isRefreshing = false;
-              // Riprova la richiesta originale con il nuovo token
-              const newToken = this.authService.getToken();
-              if (newToken) {
-                request = request.clone({
-                  setHeaders: {
-                    Authorization: `Bearer ${newToken}`,
-                  },
-                });
-              }
+              // Retry the original request
+              // HttpOnly cookies will be sent automatically
               return next.handle(request);
             }),
             catchError((refreshError) => {
               this.isRefreshing = false;
-              // Se il refresh fallisce, fai il logout
+              // If refresh fails (e.g., 409), logout
               this.authService.logout();
               return throwError(() => refreshError);
             })

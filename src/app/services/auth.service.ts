@@ -29,49 +29,38 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = 'http://localhost:8080/api/v1/auth';
   
-  // Segnale per l'access token
-  private tokenSignal = signal<string | null>(this.loadTokenFromStorage());
-  token = this.tokenSignal.asReadonly();
+  // Signal for authentication status
+  private isAuthenticatedSignal = signal(this.checkAuthStatus());
+  isAuthenticated = this.isAuthenticatedSignal.asReadonly();
   
-  // Segnale per il refresh token
-  private refreshTokenSignal = signal<string | null>(this.loadRefreshTokenFromStorage());
-  
-  // Segnale per lo stato di caricamento
+  // Signal for loading state
   isLoading = signal(false);
   
-  // Segnale per gli errori
+  // Signal for errors
   error = signal<string | null>(null);
 
-  constructor() {
-    // Carica il token dal localStorage all'avvio
-    const savedToken = localStorage.getItem('auth_token');
-    if (savedToken) {
-      this.tokenSignal.set(savedToken);
-    }
-  }
-
   /**
-   * Effettua il login con Basic Auth
+   * Performs login with Basic Auth
+   * Backend sends tokens as HttpOnly cookies
    */
   login(username: string, password: string): Observable<AuthResponse> {
     this.isLoading.set(true);
     this.error.set(null);
 
-    const credentials = btoa(`${username}:${password}`); // Codifica Basic Auth
+    const credentials = btoa(`${username}:${password}`); // Base64 encode Basic Auth
     const headers = {
       'Authorization': `Basic ${credentials}`,
       'Content-Type': 'application/json',
     };
 
-    return this.http.post<AuthResponse>(`${this.apiUrl}/authenticate`, {}, { headers }).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/authenticate`, {}, { 
+      headers,
+      withCredentials: true // Send cookies with requests
+    }).pipe(
       tap({
-        next: (response) => {
-          this.tokenSignal.set(response.access_token);
-          localStorage.setItem('auth_token', response.access_token);
-          if (response.refresh_token) {
-            this.refreshTokenSignal.set(response.refresh_token);
-            localStorage.setItem('refresh_token', response.refresh_token);
-          }
+        next: () => {
+          this.isAuthenticatedSignal.set(true);
+          console.log('Login completed, tokens saved in HttpOnly cookies');
           this.isLoading.set(false);
         },
         error: (err) => {
@@ -83,7 +72,7 @@ export class AuthService {
   }
 
   /**
-   * Effettua la registrazione
+   * Performs user registration
    */
   register(data: RegisterRequest): Observable<any> {
     this.isLoading.set(true);
@@ -93,15 +82,18 @@ export class AuthService {
       'Content-Type': 'application/json',
     };
 
-    return this.http.post<any>( `${this.apiUrl}/register`, data, { headers }).pipe(
+    return this.http.post<any>(`${this.apiUrl}/register`, data, { 
+      headers,
+      withCredentials: true
+    }).pipe(
       tap({
         next: () => {
-          console.log('Registrazione completata con successo');
+          console.log('Registration completed successfully');
           this.isLoading.set(false);
         },
         error: (err) => {
-          this.error.set(err.error?.message || 'Errore durante la registrazione');
-          console.error('Errore di registrazione:', err);
+          this.error.set(err.error?.message || 'Error during registration');
+          console.error('Registration error:', err);
           this.isLoading.set(false);
         },
       })
@@ -109,66 +101,48 @@ export class AuthService {
   }
 
   /**
-   * Effettua il logout
+   * Performs logout
    */
   logout(): void {
-    this.tokenSignal.set(null);
-    this.refreshTokenSignal.set(null);
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('refresh_token');
+    this.isAuthenticatedSignal.set(false);
     this.error.set(null);
+    
+    // Backend clears the HttpOnly cookies
+    this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).subscribe({
+      next: () => {
+        console.log('Logout completed');
+      },
+      error: (err) => {
+        console.error('Error during logout:', err);
+      },
+    });
   }
 
   /**
-   * Verifica se l'utente è autenticato
+   * Checks if the user is authenticated
    */
-  isAuthenticated(): boolean {
-    return this.tokenSignal() !== null;
+  isUserAuthenticated(): boolean {
+    return this.isAuthenticatedSignal();
   }
 
   /**
-   * Ottiene il token corrente
-   */
-  getToken(): string | null {
-    return this.tokenSignal();
-  }
-
-  /**
-   * Ottiene il refresh token
-   */
-  getRefreshToken(): string | null {
-    return this.refreshTokenSignal();
-  }
-
-  /**
-   * Rinfresca l'access token usando il refresh token
+   * Refreshes the access token using the refresh token (saved in HttpOnly cookies)
    */
   refreshAccessToken(): Observable<AuthResponse> {
-    const refreshToken = this.getRefreshToken();
-    
-    if (!refreshToken) {
-      this.error.set('Nessun refresh token disponibile');
-      return new Observable(subscriber => subscriber.error('No refresh token'));
-    }
-
-    const headers = {
-      'Authorization': `Bearer ${refreshToken}`,
-      'Content-Type': 'application/json',
-    };
-
-    return this.http.post<AuthResponse>(`${this.apiUrl}/refresh-token`, {}, { headers }).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/refresh-token`, {}, { 
+      withCredentials: true 
+    }).pipe(
       tap({
-        next: (response) => {
-          this.tokenSignal.set(response.access_token);
-          localStorage.setItem('auth_token', response.access_token);
-          if (response.refresh_token) {
-            this.refreshTokenSignal.set(response.refresh_token);
-            localStorage.setItem('refresh_token', response.refresh_token);
-          }
-          console.log('Token rinfrescato con successo');
+        next: () => {
+          console.log('Token refreshed successfully');
+          this.isAuthenticatedSignal.set(true);
         },
         error: (err) => {
-          console.error('Errore nel refresh token:', err);
+          console.error('Error refreshing token:', err);
+          // If backend returns 409, refresh token has expired
+          if (err.status === 409) {
+            console.log('Refresh token expired, login again');
+          }
           this.logout();
         },
       })
@@ -176,22 +150,13 @@ export class AuthService {
   }
 
   /**
-   * Carica il token dal localStorage
+   * Checks authentication status (used at app startup)
+   * Could make a call to a verification endpoint if needed
    */
-  private loadTokenFromStorage(): string | null {
-    if (typeof localStorage !== 'undefined') {
-      return localStorage.getItem('auth_token');
-    }
-    return null;
-  }
-
-  /**
-   * Carica il refresh token dal localStorage
-   */
-  private loadRefreshTokenFromStorage(): string | null {
-    if (typeof localStorage !== 'undefined') {
-      return localStorage.getItem('refresh_token');
-    }
-    return null;
+  private checkAuthStatus(): boolean {
+    // With HttpOnly cookies, we cannot verify directly
+    // Backend will verify the cookie on requests
+    // By default starts as unauthenticated, guard will verify
+    return false;
   }
 }
