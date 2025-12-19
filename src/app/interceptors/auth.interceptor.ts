@@ -14,6 +14,18 @@ export class AuthInterceptor implements HttpInterceptor {
   private readonly authService = inject(AuthService);
   private isRefreshing = false;
 
+  // Extract XSRF token from cookie
+  private getXsrfToken(): string | null {
+    const cookies = document.cookie.split('; ');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.split('=');
+      if (name === 'XSRF-TOKEN') {
+        return decodeURIComponent(value);
+      }
+    }
+    return null;
+  }
+
   intercept(
     request: HttpRequest<unknown>,
     next: HttpHandler
@@ -22,6 +34,18 @@ export class AuthInterceptor implements HttpInterceptor {
     request = request.clone({
       withCredentials: true,
     });
+
+    // Add XSRF token for all non-GET requests
+    if (request.method !== 'GET') {
+      const xsrfToken = this.getXsrfToken();
+      if (xsrfToken) {
+        request = request.clone({
+          setHeaders: {
+            'X-XSRF-TOKEN': xsrfToken,
+          },
+        });
+      }
+    }
 
     return next.handle(request).pipe(
       catchError((error) => {

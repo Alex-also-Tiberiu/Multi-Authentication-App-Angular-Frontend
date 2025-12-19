@@ -11,6 +11,30 @@
       <h2>Benvenuto!</h2>
       <p>Sei stato autenticato con successo.</p>
       <p class="token-info">Il tuo token è salvato in un HttpOnly cookie e verrà inviato automaticamente in tutte le richieste al backend.</p>
+
+      <div class="demo-section">
+        <h3>Demo API</h3>
+        <button (click)="callDemoApi()" [disabled]="demoLoading()" class="btn-demo">
+          @if (demoLoading()) {
+            Caricamento...
+          } @else {
+            Chiama API
+          }
+        </button>
+
+        @if (demoError()) {
+          <div class="error-message">
+            <strong>Errore:</strong> {{ demoError() }}
+          </div>
+        }
+
+        @if (demoResult()) {
+          <div class="result-box">
+            <h4>Risultato:</h4>
+            <pre>{{ demoResult() | json }}</pre>
+          </div>
+        }
+      </div>
     </div>
   </main>
 </div>
